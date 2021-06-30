@@ -211,3 +211,17 @@ test('empty x-init',
     assertConsoleInterceptorHadErrorWithCorrectElement(),
     true
 )
+
+test('using !! on x-if',
+    [html`
+        <div x-data="{a:'b'}">
+            <template id="xif" x-if="a === 'b'">
+                <span>Should be visible!</span>
+            </templatexinit>
+        </div>
+    `,
+        setupConsoleInterceptor( "xif" )
+    ],
+    assertConsoleInterceptorHadErrorWithCorrectElement(),
+    true
+)

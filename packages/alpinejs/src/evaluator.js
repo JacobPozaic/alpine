@@ -68,6 +68,7 @@ function generateFunctionFromString(expression, el) {
             return new AsyncFunction(['__self', 'scope'], `with (scope) { __self.result = ${rightSideSafeExpression} }; __self.finished = true; return __self.result;`)
         } catch ( error ) {
             handleError( error, el, expression, true )
+            return new AsyncFunction(['__self', 'scope'], `with (scope) { __self.result = { toString: function() { return 'Alpine Expression Error -> See console for details' } } }; __self.finished = true; return __self.result;`)
         }
     }
     let func = safeAsyncFunction();
@@ -121,7 +122,7 @@ export function tryCatch(el, expression, callback, ...args) {
     try {
         return callback(...args)
     } catch (e) {
-        handleError( e, el, expression )
+        handleError( e, el, expression, true )
     }
 }
 

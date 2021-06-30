@@ -5,6 +5,9 @@ import { initTree } from '../lifecycle'
 import { mutateDom } from '../mutation'
 
 directive('if', (el, { expression }, { effect, cleanup }) => {
+    if( expression.match( "[!]{2}[a-zA-Z0-9.]{1,}") ) { // they are trying to use !!something
+        expression = expression.replaceAll( /([!]{2})([a-zA-Z0-9.]{1,})/g, `typeof $2 !== 'undefined'` );
+    }
     let evaluate = evaluateLater(el, expression)
 
     let show = () => {
