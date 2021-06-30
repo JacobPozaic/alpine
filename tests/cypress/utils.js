@@ -52,12 +52,48 @@ function injectHtmlAndBootAlpine(cy, templateAndPotentiallyScripts, callback, pa
             return false
         } );
     }
+    if( handleExpectedErrors ) {
+        // exception interceptor if we reach application root
+        cy.on( 'uncaught:exception', ( error ) => {
+            if( error.el === undefined && error.expression === undefined ) {
+                console.warn( 'Expected all errors originating from Alpine to have el and expression.  Letting cypress fail the test.', error )
+                return true
+            } else {
+                let errorItem = document.createElement('li')
+                errorItem.textContent = 'here' + error.el.id
+                document.querySelector('#alpineExceptionElements' ).appendChild( errorItem )
+                return false
+            }
+        } );
+    }
 
     cy.get('#root').then(([el]) => {
         el.innerHTML = template
 
-        el.evalScripts(scripts)
+        // add two ol to page to hold refs to elements that errored out
+        if( handleExpectedErrors ) {
+            let exceptionEl = document.createElement('ol')
+            exceptionEl.id = 'alpineExceptionElements'
+            exceptionEl.setAttribute("type", "1") // make lists look distinct for cypress runner
+            el.after(exceptionEl)
 
+            let consoleEl = document.createElement('ol');
+            consoleEl.id = 'alpineConsoleElements'
+            consoleEl.setAttribute("type", "a") // make lists look distinct for cypress runner
+            el.after(consoleEl)
+        }
+        el.evalScripts(scripts)
+        document.addEventListener( "error", ( error ) => {
+            if( error.el === undefined && error.expression === undefined ) {
+                console.warn( 'Expected all errors originating from Alpine to have el and expression.  Letting cypress fail the test.', error )
+                return true
+            } else {
+                let errorItem = document.createElement('li')
+                errorItem.textContent = 'here' + error.el.id
+                document.querySelector('#alpineExceptionElements' ).appendChild( errorItem )
+                return false
+            }
+        } );
         cy.get('[alpine-is-ready]', { timeout: 5000 }).should('be.visible');
 
         // We can't just simply reload a page from a test, because we need to

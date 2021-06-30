@@ -25,11 +25,7 @@ export function start() {
     Array.from(document.querySelectorAll(allSelectors()))
         .filter(outNestedComponents)
         .forEach(el => {
-            try {
-                initTree(el)
-            } catch ( error ) {
-                setTimeout( () => { throw error }, 0 )
-            }
+            initTree(el)
         })
 
     dispatch(document, 'alpine:initialized')
@@ -62,13 +58,29 @@ export function isRoot(el) {
 }
 
 export function initTree(el, walker = walk) {
-    deferHandlingDirectives(() => {
-        walker(el, (el, skip) => {
-            directives(el, el.attributes).forEach(handle => handle())
+    try {
+        deferHandlingDirectives(() => {
+            walker(el, (el, skip) => {
+                directives(el, el.attributes).forEach(handle => handle())
 
-            el._x_ignore && skip()
+                el._x_ignore && skip()
+            })
         })
-    })
+    } catch( error ) {
+        if( error.el && error.expression ) {
+            setTimeout(() => {
+                throw error
+            }, 0 )
+        } else {
+            // somehow we failed to assign element and expression, let's at least assign element
+            Object.assign( error, { el, expression: "[UNKNOWN]" } )
+
+            console.warn(`Alpine Error: ${error.message}\n\n`, el)
+            setTimeout(() => {
+                throw error
+            }, 0 )
+        }
+    }
 }
 
 function destroyTree(root) {

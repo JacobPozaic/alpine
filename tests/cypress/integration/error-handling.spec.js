@@ -1,40 +1,39 @@
 import { haveText, html, test } from '../utils'
 
-export function setupConsoleInterceptor( ...targetIds ) {
-    const mappedTargetIds = targetIds.map( tid => `'${tid}'` ).join( ',' )
+export function setupConsoleInterceptor() {
     return `
-        let errorContainer = document.createElement('div');
-        errorContainer.id = 'errors'
-        errorContainer.textContent = 'false'
-        document.querySelector('#root').after(errorContainer)
+        // console interceptor
         console.warnlog = console.warn.bind(console)
         console.warn = function () {
-            document.getElementById( 'errors' ).textContent = [${mappedTargetIds}].some( target => arguments[1] === document.getElementById( target ) )
+            let errorItem = document.createElement('li')
+            errorItem.textContent = arguments[1].id
+            document.querySelector('#alpineConsoleElements' ).appendChild( errorItem )
             console.warnlog.apply(console, arguments)
         }
     `
 }
 
-export function assertConsoleInterceptorHadErrorWithCorrectElement() {
-    return ({get}) => {
-        get('#errors').should(haveText('true'))
-    };
-}
 
 test('x-for identifier issue',
-    [html`
-        <div x-data="{ items: ['foo'] }">
-            <template id="xfor" x-for="item in itemzzzz">
-                <span x-text="item"></span>
-            </template>
-        </div>
+    [
+        html`
+            <div x-data="{ items: ['foo'] }">
+                <template id="xfor" x-for="item in itemzzzz">
+                    <span x-text="item"></span>
+                </template>
+            </div>
     `,
-        setupConsoleInterceptor( "xfor" )
+        setupConsoleInterceptor()
     ],
-    assertConsoleInterceptorHadErrorWithCorrectElement(),
+    ({get}) => {
+        get('#alpineConsoleElements>li:nth-of-type(1)').should(haveText('xfor') )
+        get('#alpineExceptionElements>li:nth-of-type(1)').should(haveText('xfor') )
+    }
+    ,
     true
 )
 
+/*
 test('x-text identifier issue',
     [html`
         <div x-data="{ items: ['foo'] }">
@@ -211,3 +210,4 @@ test('empty x-init',
     assertConsoleInterceptorHadErrorWithCorrectElement(),
     true
 )
+*/
